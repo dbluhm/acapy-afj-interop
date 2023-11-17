@@ -11,7 +11,7 @@ import {
   ConnectionEventTypes,
   HttpOutboundTransport,
 } from '@aries-framework/core';
-import { agentDependencies } from '@aries-framework/node';
+import { HttpInboundTransport, agentDependencies } from '@aries-framework/node';
 import { AskarModule } from '@aries-framework/askar';
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs';
 import { TCPSocketServer, JsonRpcApiProxy } from 'json-rpc-api-proxy';
@@ -29,6 +29,7 @@ proxy.rpc.addMethod('initialize', async (): Promise<{}> => {
   const config: InitConfig = {
     label: 'test-agent',
     logger: new ConsoleLogger(LogLevel.debug),
+    endpoints: [process.env.AFJ_ENDPOINT || 'http://localhost:3000'],
     walletConfig: {
       id: 'test',
       key: key,
@@ -52,6 +53,7 @@ proxy.rpc.addMethod('initialize', async (): Promise<{}> => {
   });
 
   agent.registerOutboundTransport(new HttpOutboundTransport());
+  agent.registerInboundTransport(new HttpInboundTransport({port: parseInt(process.env.AFJ_MESSAGE_PORT || '3001')}));
 
   const eventPassThrough = (type: string) => {
     agent?.events.on(type, async (event) => {
