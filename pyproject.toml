@@ -1,0 +1,17 @@
+[project]
+name = ""
+version = ""
+description = ""
+authors = [
+    {name = "Daniel Bluhm", email = "dbluhm@pm.me"},
+]
+dependencies = [
+    "jrpc-client @ git+https://github.com/Indicio-tech/json-rpc-api-proxy.git@main#subdirectory=clients/python",
+    "pytest>=7.4.3",
+    "pytest-asyncio>=0.21.1",
+    "controller @ git+https://github.com/Indicio-tech/acapy-minimal-example.git",
+]
+requires-python = ">=3.9"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+
