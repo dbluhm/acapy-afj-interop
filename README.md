@@ -11,6 +11,8 @@ The goal of this project is to be able to quickly iterate on changes made to eit
 
 ## How it works
 
+![ACA-Py AFJ Interop Diagram](./docs/acapy-afj-interop.png)
+
 ACA-Py has a built in Admin API that it presents over an HTTP REST interface. AFJ does not have a built in Admin style API but there is an extension available. Unforunately, at the time of this project's creation, the REST extension is not up to date with the most recent version of AFJ. To work around this, I have thrown together a minimal JSON-RPC over TCP API. This API is not intended to be generally consumable. I intend to only add methods to it as I have reason to test them.
 
 The [`docker-compose.yml`](./docker-compose.yml) script is the key entrypoint. To run the current set of tests:
