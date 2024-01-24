@@ -1,8 +1,8 @@
 version: "3"
 services:
   acapy:
-    #image: ghcr.io/hyperledger/aries-cloudagent-python:py3.9-0.10.4
-    image: acapy-test
+    image: ghcr.io/hyperledger/aries-cloudagent-python:py3.9-nightly
+    #image: acapy-test
     ports:
       - "3001:3001"
     command: >
@@ -20,6 +20,7 @@ services:
         --auto-provision
         --log-level debug
         --debug-webhooks
+        --emit-did-peer-2
     healthcheck:
       test: curl -s -o /dev/null -w '%{http_code}' "http://localhost:3001/status/live" | grep "200" > /dev/null
       start_period: 30s
@@ -44,7 +45,7 @@ services:
       timeout: 5s
       retries: 5
 
-  runner:
+  tests:
     container_name: runner
     build: .
     environment:
