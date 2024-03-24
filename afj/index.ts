@@ -15,9 +15,9 @@ import {
   PeerDidNumAlgo,
   DidDocument,
   PeerDidResolver
-} from '@aries-framework/core';
-import { HttpInboundTransport, agentDependencies } from '@aries-framework/node';
-import { AskarModule } from '@aries-framework/askar';
+} from '@credo-ts/core';
+import { HttpInboundTransport, agentDependencies } from '@credo-ts/node';
+import { AskarModule } from '@credo-ts/askar';
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs';
 import { TCPSocketServer, JsonRpcApiProxy } from 'json-rpc-api-proxy';
 

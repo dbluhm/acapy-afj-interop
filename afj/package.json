@@ -13,9 +13,9 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "@aries-framework/askar": "^0.5.0-alpha.88",
-    "@aries-framework/core": "^0.5.0-alpha.88",
-    "@aries-framework/node": "^0.5.0-alpha.88",
+    "@credo-ts/askar": "^0.5.0",
+    "@credo-ts/core": "^0.5.0",
+    "@credo-ts/node": "^0.5.0",
     "@hyperledger/aries-askar-nodejs": "^0.2.0-dev.5",
     "json-rpc-api-proxy": "github:Indicio-tech/json-rpc-api-proxy"
   },
