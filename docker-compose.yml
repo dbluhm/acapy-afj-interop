@@ -1,10 +1,12 @@
 version: "3"
 services:
   acapy:
-    image: ghcr.io/hyperledger/aries-cloudagent-python:py3.9-nightly
-    #image: acapy-test
+    #image: ghcr.io/hyperledger/aries-cloudagent-python:py3.9-nightly
+    image: acapy-test
     ports:
       - "3001:3001"
+    environment:
+      RUST_LOG: warn
     command: >
       start
         --label Alice
