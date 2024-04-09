@@ -14,7 +14,9 @@ import {
   ConnectionsModule,
   PeerDidNumAlgo,
   DidDocument,
-  PeerDidResolver
+  PeerDidResolver,
+  CreateOutOfBandInvitationConfig,
+  HandshakeProtocol
 } from '@credo-ts/core';
 import { HttpInboundTransport, agentDependencies } from '@credo-ts/node';
 import { AskarModule } from '@credo-ts/askar';
@@ -93,6 +95,17 @@ const getAgent = () => {
 proxy.rpc.addMethod('receiveInvitation', async ({invitation}: {invitation: string}) => {
   const agent = getAgent();
   const {outOfBandRecord} = await agent.oob.receiveInvitationFromUrl(invitation);
+  return outOfBandRecord;
+});
+
+proxy.rpc.addMethod('createInvitation', async () => {
+  const agent = getAgent();
+  const config: CreateOutOfBandInvitationConfig = {
+    handshake: true,
+    handshakeProtocols: [HandshakeProtocol.DidExchange],
+    autoAcceptConnection: true,
+  }
+  const outOfBandRecord = await agent.oob.createInvitation(config);
   return outOfBandRecord;
 });
 

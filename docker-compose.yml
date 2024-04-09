@@ -9,7 +9,7 @@ services:
       RUST_LOG: warn
     command: >
       start
-        --label Alice
+        --label ACA-Py
         --inbound-transport http 0.0.0.0 3000
         --outbound-transport http
         --endpoint http://acapy:3000
@@ -22,7 +22,63 @@ services:
         --auto-provision
         --log-level debug
         --debug-webhooks
-        --emit-did-peer-4
+    healthcheck:
+      test: curl -s -o /dev/null -w '%{http_code}' "http://localhost:3001/status/live" | grep "200" > /dev/null
+      start_period: 30s
+      interval: 7s
+      timeout: 5s
+      retries: 5
+
+  alice:
+    #image: ghcr.io/hyperledger/aries-cloudagent-python:py3.9-nightly
+    image: acapy-test
+    ports:
+      - "3002:3001"
+    environment:
+      RUST_LOG: warn
+    command: >
+      start
+        --label Alice
+        --inbound-transport http 0.0.0.0 3000
+        --outbound-transport http
+        --endpoint http://alice:3000
+        --admin 0.0.0.0 3001
+        --admin-insecure-mode
+        --no-ledger
+        --wallet-type askar
+        --wallet-name alice
+        --wallet-key insecure
+        --auto-provision
+        --log-level debug
+        --debug-webhooks
+    healthcheck:
+      test: curl -s -o /dev/null -w '%{http_code}' "http://localhost:3001/status/live" | grep "200" > /dev/null
+      start_period: 30s
+      interval: 7s
+      timeout: 5s
+      retries: 5
+
+  robert:
+    image: ghcr.io/hyperledger/aries-cloudagent-python:py3.9-0.11.0
+    ports:
+      - "3003:3001"
+    environment:
+      RUST_LOG: warn
+    command: >
+      start
+        --label "Robert Sr"
+        --inbound-transport http 0.0.0.0 3000
+        --outbound-transport http
+        --endpoint http://robert:3000
+        --admin 0.0.0.0 3001
+        --admin-insecure-mode
+        --no-ledger
+        --wallet-type askar
+        --wallet-name robert
+        --wallet-key insecure
+        --auto-provision
+        --log-level debug
+        --debug-webhooks
     healthcheck:
       test: curl -s -o /dev/null -w '%{http_code}' "http://localhost:3001/status/live" | grep "200" > /dev/null
       start_period: 30s
@@ -53,13 +109,18 @@ services:
     environment:
       AFJ_HOST: afj
       AFJ_PORT: 3000
-      ACAPY_HOST: acapy
-      ACAPY_PORT: 3001
+      ACAPY: http://acapy:3001
+      ALICE: http://alice:3001
+      ROBERT: http://robert:3001
     volumes:
       - ./tests:/usr/src/app/tests:z
-    command: pytest
+    entrypoint: pdm run pytest
     depends_on:
       acapy:
         condition: service_healthy
       afj:
+        condition: service_healthy
+      alice:
+        condition: service_healthy
+      robert:
         condition: service_healthy

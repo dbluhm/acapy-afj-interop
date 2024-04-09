@@ -10,8 +10,9 @@ from controller.controller import Controller as AcapyController
 
 AFJ_HOST = getenv("AFJ_HOST", "localhost")
 AFJ_PORT = int(getenv("AFJ_PORT", "3000"))
-ACAPY_HOST = getenv("ACAPY_HOST", "localhost")
-ACAPY_PORT = int(getenv("ACA_PORT", "3001"))
+ACAPY = getenv("ACAPY", "http://localhost:3001")
+ALICE = getenv("ALICE", "http://localhost:3002")
+ROBERT = getenv("ROBERT", "http://localhost:3003")
 
 @pytest.fixture
 def transport():
@@ -36,6 +37,22 @@ async def afj(client, transport):
 @pytest_asyncio.fixture
 async def acapy():
     """Create a controller instance."""
-    controller = AcapyController(f"http://{ACAPY_HOST}:{ACAPY_PORT}")
+    controller = AcapyController(ACAPY)
+    async with controller as controller:
+        yield controller
+
+
+@pytest_asyncio.fixture
+async def alice():
+    """Create a controller instance."""
+    controller = AcapyController(ALICE)
+    async with controller as controller:
+        yield controller
+
+
+@pytest_asyncio.fixture
+async def robert():
+    """Create a controller instance."""
+    controller = AcapyController(ROBERT)
     async with controller as controller:
         yield controller
