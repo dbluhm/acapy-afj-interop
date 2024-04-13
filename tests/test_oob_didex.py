@@ -8,6 +8,8 @@ from controller.models import ConnRecord, DIDResult, InvitationMessage, Invitati
 from controller.protocols import _make_params
 from wrapper import AfjWrapper
 
+logging_to_stdout()
+
 
 @pytest.mark.asyncio
 async def test_resolution(afj: AfjWrapper):
@@ -250,6 +252,34 @@ async def test_acapy_to_alice_1_1_invite_use_did(acapy: Controller, alice: Contr
     acapy_conn, alice_conn = await didexchange(acapy, alice, invite=invitation.invitation, use_did_method="did:peer:2")
     assert alice_conn.my_did and alice_conn.my_did.startswith("did:peer:2")
     assert acapy_conn.my_did and acapy_conn.my_did.startswith("did:peer:2")
+
+
+@pytest.mark.asyncio
+async def test_acapy_to_alice_1_1_invite_use_4(acapy: Controller, alice: Controller):
+    invitation = await acapy.post(
+        "/out-of-band/create-invitation",
+        json={
+            "handshake_protocols": [
+                "https://didcomm.org/didexchange/1.1"
+            ],
+            "use_did_method": "did:peer:4",
+        },
+        response=InvitationRecord
+    )
+    acapy_conn, alice_conn = await didexchange(acapy, alice, invite=invitation.invitation, use_did_method="did:peer:4")
+    assert alice_conn.my_did and alice_conn.my_did.startswith("did:peer:4")
+    assert acapy_conn.my_did and acapy_conn.my_did.startswith("did:peer:4")
+    invitation = await acapy.post(
+        "/out-of-band/create-invitation",
+        json={
+            "handshake_protocols": [
+                "https://didcomm.org/didexchange/1.1"
+            ],
+            "use_did_method": "did:peer:4",
+        },
+        response=InvitationRecord
+    )
+    acapy_conn, alice_conn = await didexchange(acapy, alice, invite=invitation.invitation, use_did_method="did:peer:4")
 
 @pytest.mark.asyncio
 async def test_acapy_to_robert(acapy: Controller, robert: Controller):
