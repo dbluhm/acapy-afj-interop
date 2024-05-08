@@ -1,4 +1,7 @@
 """Test OOB DIDExchange Protocol."""
+import asyncio
+from dataclasses import asdict
+import json
 from typing import Optional
 import pytest
 
@@ -76,6 +79,8 @@ async def didexchange(
     use_did_method: Optional[str] = None,
     use_did: Optional[str] = None,
 ):
+    inviter.event_queue.flush()
+    invitee.event_queue.flush()
     invitee_oob_record = await invitee.post(
         "/out-of-band/receive-invitation",
         json=invite,
@@ -84,6 +89,24 @@ async def didexchange(
         ),
         response=OobRecord,
     )
+
+    if use_existing_connection and invitee_oob_record.state == "reuse-accepted":
+        inviter_oob_record = await inviter.record_with_values(
+            topic="out_of_band",
+            invi_msg_id=invite.id,
+            record_type=OobRecord,
+            state="done",
+        )
+        inviter_conn = await inviter.get(
+            f"/connections/{inviter_oob_record.connection_id}",
+            response=ConnRecord,
+        )
+        invitee_conn = await invitee.get(
+            f"/connections/{invitee_oob_record.connection_id}",
+            response=ConnRecord,
+        )
+        return inviter_conn, invitee_conn
+
     invitee_conn = await invitee.post(
         f"/didexchange/{invitee_oob_record.connection_id}/accept-invitation",
         params=_make_params(use_did=use_did, use_did_method=use_did_method),
@@ -280,6 +303,33 @@ async def test_acapy_to_alice_1_1_invite_use_4(acapy: Controller, alice: Control
         response=InvitationRecord
     )
     acapy_conn, alice_conn = await didexchange(acapy, alice, invite=invitation.invitation, use_did_method="did:peer:4")
+
+@pytest.mark.asyncio
+async def test_acapy_to_alice_1_1_invite_reuse_4(acapy: Controller, alice: Controller):
+    invitation = await acapy.post(
+        "/out-of-band/create-invitation",
+        json={
+            "handshake_protocols": [
+                "https://didcomm.org/didexchange/1.1"
+            ],
+            "use_did_method": "did:peer:4",
+        },
+        response=InvitationRecord
+    )
+    acapy_conn, alice_conn = await didexchange(acapy, alice, invite=invitation.invitation, use_did_method="did:peer:4")
+    assert alice_conn.my_did and alice_conn.my_did.startswith("did:peer:4")
+    assert acapy_conn.my_did and acapy_conn.my_did.startswith("did:peer:4")
+    invitation = await acapy.post(
+        "/out-of-band/create-invitation",
+        json={
+            "handshake_protocols": [
+                "https://didcomm.org/didexchange/1.1"
+            ],
+            "use_did_method": "did:peer:4",
+        },
+        response=InvitationRecord
+    )
+    acapy_conn, alice_conn = await didexchange(acapy, alice, use_existing_connection=True, invite=invitation.invitation, use_did_method="did:peer:4")
 
 @pytest.mark.asyncio
 async def test_acapy_to_robert(acapy: Controller, robert: Controller):
