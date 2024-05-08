@@ -39,3 +39,7 @@ class AfjWrapper:
         return await self.client.notification_received(
             "event.ConnectionStateChanged"
         )
+
+    async def resolve(self, did: str) -> dict:
+        """Resolve a DID."""
+        return await self.client.request("resolve", did=did)

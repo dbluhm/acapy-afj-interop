@@ -10,13 +10,20 @@ import {
   JwaSignatureAlgorithm,
   ConnectionEventTypes,
   HttpOutboundTransport,
-} from '@aries-framework/core';
-import { HttpInboundTransport, agentDependencies } from '@aries-framework/node';
-import { AskarModule } from '@aries-framework/askar';
+  ConnectionsModuleConfigOptions,
+  ConnectionsModule,
+  PeerDidNumAlgo,
+  DidDocument,
+  PeerDidResolver,
+  CreateOutOfBandInvitationConfig,
+  HandshakeProtocol
+} from '@credo-ts/core';
+import { HttpInboundTransport, agentDependencies } from '@credo-ts/node';
+import { AskarModule } from '@credo-ts/askar';
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs';
 import { TCPSocketServer, JsonRpcApiProxy } from 'json-rpc-api-proxy';
 
-let agent: Agent | null;
+let agent: Agent | null = null;
 const server = new TCPSocketServer({
   host: process.env.AFJ_HOST || '0.0.0.0',
   port: parseInt(process.env.AFJ_PORT || '3000'),
@@ -24,6 +31,11 @@ const server = new TCPSocketServer({
 const proxy = new JsonRpcApiProxy(server);
 
 proxy.rpc.addMethod('initialize', async (): Promise<{}> => {
+  if (agent !== null) {
+    console.warn('Agent already initialized');
+    return {};
+  }
+
   const key = ariesAskar.storeGenerateRawKey({});
 
   const config: InitConfig = {
@@ -49,6 +61,9 @@ proxy.rpc.addMethod('initialize', async (): Promise<{}> => {
       askar: new AskarModule({
         ariesAskar,
       }),
+      connections: new ConnectionsModule({
+        peerNumAlgoForDidExchangeRequests: PeerDidNumAlgo.ShortFormAndLongForm
+      })
     },
   });
 
@@ -81,6 +96,23 @@ proxy.rpc.addMethod('receiveInvitation', async ({invitation}: {invitation: strin
   const agent = getAgent();
   const {outOfBandRecord} = await agent.oob.receiveInvitationFromUrl(invitation);
   return outOfBandRecord;
+});
+
+proxy.rpc.addMethod('createInvitation', async () => {
+  const agent = getAgent();
+  const config: CreateOutOfBandInvitationConfig = {
+    handshake: true,
+    handshakeProtocols: [HandshakeProtocol.DidExchange],
+    autoAcceptConnection: true,
+  }
+  const outOfBandRecord = await agent.oob.createInvitation(config);
+  return outOfBandRecord;
+});
+
+proxy.rpc.addMethod('resolve', async({did}: {did: string}) => {
+  const agent = getAgent();
+  const result = await agent.dids.resolve(did);
+  return result.didDocument;
 });
 
 proxy.start();
