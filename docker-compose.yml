@@ -1,8 +1,8 @@
 version: "3"
 services:
   acapy:
-    #image: ghcr.io/hyperledger/aries-cloudagent-python:py3.9-0.12.1
-    image: acapy-test
+    image: ghcr.io/indicio-tech/aries-cloudagent-python:0.12.1-credo-json-ld
+    #image: acapy-test
     ports:
       - "3001:3001"
     environment:

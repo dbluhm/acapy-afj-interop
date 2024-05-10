@@ -146,6 +146,9 @@ async def jsonld_issue_credential(
 async def test_issue(
     afj: AfjWrapper, acapy: Controller, conn: ConnRecord, issuing_did: str
 ):
+    assert conn.their_did
+    holder_did = await derive_did_key(acapy, conn.their_did)
+
     credential = {
         "@context": [
             "https://www.w3.org/2018/credentials/v1",
@@ -162,7 +165,7 @@ async def test_issue(
             sep="T", timespec="seconds"
         ),
         "credentialSubject": {
-            "id": conn.their_did,
+            "id": holder_did,
             "dateHired": str(date.today()),
             "clearance": 1,
         },
@@ -263,16 +266,21 @@ def get_auth_vm_from_doc(doc: Dict[str, Any]) -> Dict[str, Any]:
         )
 
 
+async def derive_did_key(agent: Controller, did: str) -> str:
+    """Derive a did:key from another DID."""
+    resolved = await agent.get(f"/resolver/resolve/{did}")
+    doc: Dict[str, Any] = resolved["did_document"]
+    vm = get_auth_vm_from_doc(doc)
+    return vm_to_did_key(vm)
+
+
 @pytest_asyncio.fixture
 async def issued_cred(
     afj: AfjWrapper, acapy: Controller, conn: ConnRecord, issuing_did: str
 ):
     """Load AFJ with an issued credential."""
-    # Determine a did:key value from their did
-    resolved = await acapy.get(f"/resolver/resolve/{conn.their_did}")
-    doc: Dict[str, Any] = resolved["did_document"]
-    vm = get_auth_vm_from_doc(doc)
-    holder_did = vm_to_did_key(vm)
+    assert conn.their_did
+    holder_did = await derive_did_key(acapy, conn.their_did)
 
     credential = {
         "@context": [
