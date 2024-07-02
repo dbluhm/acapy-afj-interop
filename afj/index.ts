@@ -4,24 +4,39 @@ import {
   KeyDerivationMethod,
   ConsoleLogger,
   LogLevel,
-  KeyDidCreateOptions,
-  KeyType,
-  DidKey,
-  JwaSignatureAlgorithm,
   ConnectionEventTypes,
   HttpOutboundTransport,
-  ConnectionsModuleConfigOptions,
   ConnectionsModule,
   PeerDidNumAlgo,
-  DidDocument,
-  PeerDidResolver,
   CreateOutOfBandInvitationConfig,
-  HandshakeProtocol
+  HandshakeProtocol,
+  CredentialsModule,
+  AutoAcceptCredential,
+  JsonLdCredentialFormatService,
+  DifPresentationExchangeProofFormatService,
+  V2CredentialProtocol,
+  W3cCredentialsModule,
+  ProofsModule,
+  V2ProofProtocol,
+  CredentialEventTypes,
+  ProofEventTypes,
+  AutoAcceptProof,
+  DidsModule,
+  PeerDidResolver,
+  PeerDidRegistrar,
+  DocumentLoader,
+  AgentContext,
+  DidsApi,
+  CredoError,
+  JsonTransformer
 } from '@credo-ts/core';
 import { HttpInboundTransport, agentDependencies } from '@credo-ts/node';
 import { AskarModule } from '@credo-ts/askar';
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs';
 import { TCPSocketServer, JsonRpcApiProxy } from 'json-rpc-api-proxy';
+import validatePDv1 from '@sphereon/pex/dist/main/lib/validation/validatePDv1'
+import { defaultDocumentLoader } from '@credo-ts/core/build/modules/vc/data-integrity/libraries/documentLoader';
+import { DocumentLoaderResult } from '@credo-ts/core/build/modules/vc/data-integrity/jsonldUtil';
 
 let agent: Agent | null = null;
 const server = new TCPSocketServer({
@@ -53,6 +68,8 @@ proxy.rpc.addMethod('initialize', async (): Promise<{}> => {
     },
   };
 
+  const jsonLdCredentialFormat = new JsonLdCredentialFormatService()
+  const difPresentationFormat = new DifPresentationExchangeProofFormatService()
   agent = new Agent({
     config,
     dependencies: agentDependencies,
@@ -61,9 +78,30 @@ proxy.rpc.addMethod('initialize', async (): Promise<{}> => {
       askar: new AskarModule({
         ariesAskar,
       }),
+      dids: new DidsModule({
+        registrars: [new PeerDidRegistrar()],
+        resolvers: [new PeerDidResolver()]
+      }),
       connections: new ConnectionsModule({
         peerNumAlgoForDidExchangeRequests: PeerDidNumAlgo.ShortFormAndLongForm
-      })
+      }),
+      credentials: new CredentialsModule({
+        autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+        credentialProtocols: [
+          new V2CredentialProtocol({
+            credentialFormats: [jsonLdCredentialFormat],
+          }),
+        ],
+      }),
+      w3cCredentials: new W3cCredentialsModule(),
+      proofs: new ProofsModule({
+        autoAcceptProofs: AutoAcceptProof.ContentApproved,
+        proofProtocols: [
+          new V2ProofProtocol({
+            proofFormats: [difPresentationFormat],
+          }),
+        ],
+      }),
     },
   });
 
@@ -78,6 +116,8 @@ proxy.rpc.addMethod('initialize', async (): Promise<{}> => {
   };
 
   eventPassThrough(ConnectionEventTypes.ConnectionStateChanged)
+  eventPassThrough(CredentialEventTypes.CredentialStateChanged)
+  eventPassThrough(ProofEventTypes.ProofStateChanged)
 
   await agent.initialize();
   return {};
@@ -114,5 +154,32 @@ proxy.rpc.addMethod('resolve', async({did}: {did: string}) => {
   const result = await agent.dids.resolve(did);
   return result.didDocument;
 });
+
+proxy.rpc.addMethod(
+  'credentials.acceptOffer',
+  async ({credentialRecordId}: {credentialRecordId: string}) => {
+    const agent = getAgent();
+    await agent.credentials.acceptOffer({credentialRecordId})
+  }
+)
+
+proxy.rpc.addMethod(
+  'proofs.acceptRequest',
+  async ({proofRecordId}: {proofRecordId: string}) => {
+    const agent = getAgent();
+    await agent.proofs.acceptRequest({proofRecordId})
+  }
+)
+
+proxy.rpc.addMethod(
+  'validatePresentationDefinition',
+  async ({definition}: {definition: any}) => {
+    const result = validatePDv1(definition)
+    console.log('Validation details:')
+    console.log(definition)
+    console.log(JSON.stringify((validatePDv1 as any).errors, null, 2))
+    return result
+  }
+)
 
 proxy.start();
