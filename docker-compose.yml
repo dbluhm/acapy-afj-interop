@@ -114,7 +114,7 @@ services:
       ROBERT: http://robert:3001
     volumes:
       - ./tests:/usr/src/app/tests:z
-    entrypoint: pdm run pytest
+    entrypoint: uv run pytest
     depends_on:
       acapy:
         condition: service_healthy
